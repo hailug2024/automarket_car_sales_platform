@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block content %}<div class="row justify-content-center"><div class="col-lg-7">
+<div class="card p-4 shadow-sm"><h2>Reserve {{ vehicle }}</h2><p>Total: <strong>{{ vehicle.currency }} {{ vehicle.price|floatformat:2 }}</strong></p>
+<p>Payment options: Chapa online checkout, bank transfer or cash/manual payment.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-success btn-lg">Continue to payment</button></form></div></div></div>{% endblock %}

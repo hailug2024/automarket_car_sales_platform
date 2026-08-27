@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}AutoMarket | Cars{% endblock %}
+{% block content %}
+<div class="hero p-5 rounded-4 mb-4"><h1>Find your next car</h1><p>Browse verified vehicles, inspect every angle and reserve online.</p>
+<form class="row g-2" method="get">
+<div class="col-md-4"><input class="form-control" name="q" placeholder="Make, model or stock number" value="{{ request.GET.q }}"></div>
+<div class="col-md-2"><select class="form-select" name="body"><option value="">Body type</option>{% for v,l in vehicles.model.BODY_TYPES %}<option value="{{v}}">{{l}}</option>{% endfor %}</select></div>
+<div class="col-md-2"><input class="form-control" name="min_price" placeholder="Min price"></div>
+<div class="col-md-2"><input class="form-control" name="max_price" placeholder="Max price"></div>
+<div class="col-md-2"><button class="btn btn-primary w-100">Search</button></div>
+</form></div>
+{% if featured %}<h2 class="mb-3">Promoted cars</h2><div class="row">{% for car in featured %}<div class="col-md-3 mb-4">{% include "cars/card.html" with car=car %}</div>{% endfor %}</div>{% endif %}
+<h2 class="mb-3">Available inventory</h2><div class="row">{% for car in vehicles %}<div class="col-md-4 mb-4">{% include "cars/card.html" with car=car %}</div>{% empty %}<p>No vehicles matched your search.</p>{% endfor %}</div>
+{% endblock %}
