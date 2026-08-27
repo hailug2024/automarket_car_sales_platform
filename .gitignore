@@ -2,6 +2,9 @@
 venv/
 .venv/
 
+# Django collected static files
+staticfiles/
+
 # Environment variables and secrets
 .env
 

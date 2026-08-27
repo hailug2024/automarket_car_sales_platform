@@ -84,28 +84,110 @@ class TestDrive(models.Model):
     status = models.CharField(max_length=20, choices=STATUS, default="requested")
     created_at = models.DateTimeField(auto_now_add=True)
 
-class Sale(models.Model):
     STATUS = [("pending","Pending"),("reserved","Reserved"),("completed","Completed"),("cancelled","Cancelled")]
     PAYMENT = [("chapa","Chapa"),("bank","Bank Transfer"),("cash","Cash")]
-    reference = models.CharField(max_length=20, unique=True, default=lambda: uuid.uuid4().hex[:12].upper())
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT)
+def generate_sale_reference():
+    return uuid.uuid4().hex[:12].upper()
+
+
+class Sale(models.Model):
+    STATUS = [
+        ("pending", "Pending"),
+        ("reserved", "Reserved"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    PAYMENT = [
+        ("chapa", "Chapa"),
+        ("bank", "Bank Transfer"),
+        ("cash", "Cash"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.PROTECT,
+    )
+
+    reference = models.CharField(
+        max_length=20,
+        unique=True,
+        default=generate_sale_reference,
+    )
+
     customer_name = models.CharField(max_length=120)
     customer_email = models.EmailField()
     customer_phone = models.CharField(max_length=40)
-    amount = models.DecimalField(max_digits=14, decimal_places=2)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT, default="chapa")
-    payment_status = models.CharField(max_length=20, default="unpaid")
-    status = models.CharField(max_length=20, choices=STATUS, default="pending")
-    chapa_reference = models.CharField(max_length=100, blank=True)
+
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+    )
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT,
+        default="chapa",
+    )
+
+    payment_status = models.CharField(
+        max_length=20,
+        default="unpaid",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS,
+        default="pending",
+    )
+
+    chapa_reference = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
-    paid_at = models.DateTimeField(null=True, blank=True)
+
+    paid_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
 
 class Payment(models.Model):
-    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="payments")
-    transaction_reference = models.CharField(max_length=120, unique=True)
+    sale = models.ForeignKey(
+        Sale,
+        on_delete=models.CASCADE,
+        related_name="payments",
+    )
+
+    transaction_reference = models.CharField(
+        max_length=120,
+        unique=True,
+    )
+
     method = models.CharField(max_length=30)
-    amount = models.DecimalField(max_digits=14, decimal_places=2)
-    status = models.CharField(max_length=30, default="pending")
-    raw_response = models.JSONField(default=dict, blank=True)
+
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+    )
+
+    status = models.CharField(
+        max_length=30,
+        default="pending",
+    )
+
+    raw_response = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
