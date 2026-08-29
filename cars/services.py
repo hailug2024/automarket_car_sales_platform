@@ -14,9 +14,10 @@ def initialize_chapa(sale):
         "tx_ref": sale.reference,
         "callback_url": f"{settings.PUBLIC_BASE_URL}/payment/callback/{sale.reference}/",
         "return_url": f"{settings.PUBLIC_BASE_URL}/payment/success/{sale.reference}/",
-        "customization": {
-            "title": "AutoMarket Vehicle Purchase",
+              "customization": {
+            "title": "AutoMarket",
             "description": f"Vehicle {sale.vehicle.stock_number}",
+                
         },
     }
     headers = {"Authorization": f"Bearer {settings.CHAPA_SECRET_KEY}", "Content-Type": "application/json"}
