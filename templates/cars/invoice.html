@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm" id="invoice">
+
+        <div class="card-body p-4">
+
+            <div class="text-center mb-4">
+                <h1 class="fw-bold">AutoMarket</h1>
+                <h3>Vehicle Purchase Invoice</h3>
+                <p class="text-muted">
+                    Official purchase document
+                </p>
+            </div>
+
+            <hr>
+
+            <div class="row mb-4">
+
+                <div class="col-md-6">
+                    <h5>Invoice Details</h5>
+
+                    <p>
+                        <strong>Reference:</strong>
+                        {{ sale.reference }}
+                    </p>
+
+                    <p>
+                        <strong>Created:</strong>
+                        {{ sale.created_at|date:"d M Y H:i" }}
+                    </p>
+
+                    <p>
+                        <strong>Sale Status:</strong>
+                        {{ sale.get_status_display }}
+                    </p>
+
+                    <p>
+                        <strong>Payment Status:</strong>
+                        {{ sale.payment_status|title }}
+                    </p>
+                </div>
+
+                <div class="col-md-6">
+                    <h5>Customer</h5>
+
+                    <p>
+                        <strong>Name:</strong>
+                        {{ sale.customer_name }}
+                    </p>
+
+                    <p>
+                        <strong>Email:</strong>
+                        {{ sale.customer_email }}
+                    </p>
+
+                    <p>
+                        <strong>Phone:</strong>
+                        {{ sale.customer_phone }}
+                    </p>
+                </div>
+
+            </div>
+
+            <h5>Vehicle</h5>
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Stock Number</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>{{ sale.vehicle }}</td>
+                        <td>{{ sale.vehicle.stock_number }}</td>
+                        <td class="text-end">
+                            {{ sale.vehicle.currency }}
+                            {{ sale.amount|floatformat:2 }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="text-end mb-4">
+                <h4>
+                    Total:
+                    {{ sale.vehicle.currency }}
+                    {{ sale.amount|floatformat:2 }}
+                </h4>
+            </div>
+
+            {% if sale.payment_status == "paid" %}
+
+                <div class="alert alert-success">
+                    <strong>PAYMENT CONFIRMED</strong><br>
+                    Payment has been verified by AutoMarket.
+                </div>
+
+                <p>
+                    <strong>Sale Status:</strong>
+                    {{ sale.get_status_display }}
+                </p>
+
+                {% if sale.paid_at %}
+                    <p>
+                        <strong>Paid At:</strong>
+                        {{ sale.paid_at|date:"d M Y H:i" }}
+                    </p>
+                {% endif %}
+
+                {% if sale.chapa_reference %}
+                    <p>
+                        <strong>Chapa Reference:</strong>
+                        {{ sale.chapa_reference }}
+                    </p>
+                {% endif %}
+
+            {% else %}
+
+                <div class="alert alert-warning">
+                    <strong>PAYMENT NOT CONFIRMED</strong><br>
+                    This invoice is currently unpaid.
+                </div>
+
+                {% if sale.payment_method == "chapa" %}
+
+                    {% if sale.amount <= 1000000 %}
+
+                        <form
+                            method="post"
+                            action="{% url 'start_chapa_payment' sale.reference %}"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                type="submit"
+                                class="btn btn-success btn-lg"
+                            >
+                                Continue to Chapa Payment
+                            </button>
+                        </form>
+
+                    {% else %}
+
+                        <div class="alert alert-danger">
+                            This vehicle exceeds the current Chapa
+                            online payment limit of 1,000,000 ETB.
+                            Please use Bank Transfer or Cash/Manual Payment.
+                        </div>
+
+                    {% endif %}
+
+                {% elif sale.payment_method == "bank" %}
+
+                    <div class="alert alert-info">
+                        Please contact the dealership for bank transfer
+                        instructions.
+                    </div>
+
+                {% else %}
+
+                    <div class="alert alert-info">
+                        Cash/manual payment selected.
+                        Please contact the dealership.
+                    </div>
+
+                {% endif %}
+
+            {% endif %}
+
+            <div class="mt-4">
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="window.print()"
+                >
+                    Print Invoice
+                </button>
+
+                <a
+                    href="/"
+                    class="btn btn-secondary"
+                >
+                    Back to Cars
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+@media print {
+
+    body * {
+        visibility: hidden;
+    }
+
+    #invoice,
+    #invoice * {
+        visibility: visible;
+    }
+
+    #invoice {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+    }
+
+    .btn,
+    form {
+        display: none !important;
+    }
+}
+</style>
+
+{% endblock %}

@@ -6,6 +6,7 @@ from django.db.models import Q, Sum, Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from .forms import EnquiryForm, PurchaseForm, TestDriveForm
 from .models import Vehicle, Wishlist, Enquiry, TestDrive, Sale, Payment
 from .services import initialize_chapa, verify_chapa
@@ -91,7 +92,95 @@ def buy_vehicle(request, pk):
         form = PurchaseForm(initial={"customer_name": request.user.get_full_name() if request.user.is_authenticated else "",
                                      "customer_email": request.user.email if request.user.is_authenticated else ""})
     return render(request,"cars/purchase.html",{"vehicle":vehicle,"form":form})
+def invoice(request, reference):
+    sale = get_object_or_404(
+        Sale.objects.select_related("vehicle"),
+        reference=reference,
+    )
 
+    return render(
+        request,
+        "cars/invoice.html",
+        {
+            "sale": sale,
+        },
+    )
+
+
+@require_POST
+def start_chapa_payment(request, reference):
+    sale = get_object_or_404(
+        Sale.objects.select_related("vehicle"),
+        reference=reference,
+    )
+
+    # Do not start another payment for an already-paid sale.
+    if sale.payment_status == "paid":
+        messages.info(
+            request,
+            "This sale has already been paid.",
+        )
+        return redirect("invoice", sale.reference)
+
+    # Do not start payment for a cancelled sale.
+    if sale.status == "cancelled":
+        messages.error(
+            request,
+            "This sale has been cancelled.",
+        )
+        return redirect("invoice", sale.reference)
+
+    # Only Chapa sales may use this endpoint.
+    if sale.payment_method != "chapa":
+        messages.error(
+            request,
+            "This sale is not configured for Chapa payment.",
+        )
+        return redirect("invoice", sale.reference)
+
+    # Current Chapa limit observed from your API response.
+    if sale.amount > Decimal("1000000"):
+        messages.error(
+            request,
+            "Chapa online payment is currently limited to "
+            "1,000,000 ETB.",
+        )
+        return redirect("invoice", sale.reference)
+
+    # Do not create another payment if one already succeeded.
+    existing_success = Payment.objects.filter(
+        sale=sale,
+        status="success",
+    ).first()
+
+    if existing_success:
+        messages.info(
+            request,
+            "This payment has already been recorded.",
+        )
+        return redirect("invoice", sale.reference)
+
+    checkout, error = initialize_chapa(sale)
+
+    if checkout:
+        sale.chapa_reference = sale.reference
+        sale.save(
+            update_fields=[
+                "chapa_reference",
+            ]
+        )
+
+        return redirect(checkout)
+
+    messages.error(
+        request,
+        f"Chapa initialization failed: {error}",
+    )
+
+    return redirect(
+        "invoice",
+        sale.reference,
+    )
 def purchase_success(request, reference):
     sale = get_object_or_404(Sale, reference=reference)
     return render(request,"cars/success.html",{"sale":sale})
@@ -132,3 +221,4 @@ def export_sales_csv(request):
     for s in Sale.objects.select_related("vehicle").order_by("-created_at"):
         writer.writerow([s.reference,str(s.vehicle),s.customer_name,s.amount,s.payment_method,s.payment_status,s.status,s.created_at])
     return response
+
